@@ -131,6 +131,74 @@ export type Database = {
         }
         Relationships: []
       }
+      gallery_albums: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gallery_images: {
+        Row: {
+          album_id: string
+          caption: string | null
+          created_at: string
+          display_order: number | null
+          id: string
+          image_url: string
+        }
+        Insert: {
+          album_id: string
+          caption?: string | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          image_url: string
+        }
+        Update: {
+          album_id?: string
+          caption?: string | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          image_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gallery_images_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "gallery_albums"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string

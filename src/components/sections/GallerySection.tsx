@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Play, ExternalLink, Video } from "lucide-react";
+import { Play, ExternalLink, Video, Image } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -106,8 +106,8 @@ export function GallerySection() {
           )}
         </div>
 
-        {/* YouTube Channel Link */}
-        <div className="text-center mt-10">
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
           <Button
             variant="outline"
             size="lg"
@@ -116,6 +116,14 @@ export function GallerySection() {
           >
             <ExternalLink className="h-4 w-4" />
             Watch More on YouTube
+          </Button>
+          <Button
+            size="lg"
+            className="gap-2"
+            onClick={() => window.location.href = "/gallery"}
+          >
+            <Image className="h-4 w-4" />
+            View Photo Gallery
           </Button>
         </div>
       </div>

@@ -15,7 +15,8 @@ import {
   X,
   Church,
   Home,
-  UserCog
+  UserCog,
+  Image
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ const navItems = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Events", href: "/admin/events", icon: Calendar },
   { name: "Videos", href: "/admin/videos", icon: Video },
+  { name: "Gallery", href: "/admin/gallery", icon: Image },
   { name: "Messages", href: "/admin/messages", icon: MessageSquare, showBadge: true },
   { name: "Admins", href: "/admin/admins", icon: UserCog },
   { name: "Settings", href: "/admin/settings", icon: Settings },
