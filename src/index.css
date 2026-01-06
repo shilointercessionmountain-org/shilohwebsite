@@ -4,58 +4,58 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Shiloh Intercession Mountain - Modern & Clean Theme
-   Blue/Purple accent colors on white background
+/* Shiloh Intercession Mountain - Navy & Sky Blue Theme
+   Based on logo colors: Navy blue and sky blue tones
    All colors MUST be HSL.
 */
 
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --foreground: 220 60% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 220 60% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 220 60% 15%;
 
-    /* Primary: Deep Blue */
-    --primary: 221 83% 53%;
+    /* Primary: Deep Navy Blue (from logo) */
+    --primary: 220 70% 25%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Light Blue-Gray */
-    --secondary: 214 32% 91%;
-    --secondary-foreground: 222 47% 11%;
+    /* Secondary: Sky Blue (from logo background) */
+    --secondary: 205 70% 75%;
+    --secondary-foreground: 220 60% 15%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 205 40% 94%;
+    --muted-foreground: 220 30% 40%;
 
-    /* Accent: Purple */
-    --accent: 262 83% 58%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent: Light Sky Blue */
+    --accent: 205 80% 65%;
+    --accent-foreground: 220 60% 15%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 221 83% 53%;
+    --border: 205 40% 88%;
+    --input: 205 40% 88%;
+    --ring: 220 70% 25%;
 
     --radius: 0.75rem;
 
-    /* Custom colors for church theme */
-    --hero-gradient-start: 221 83% 53%;
-    --hero-gradient-end: 262 83% 58%;
+    /* Custom colors for theme */
+    --hero-gradient-start: 220 70% 25%;
+    --hero-gradient-end: 205 70% 55%;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5% 26%;
-    --sidebar-primary: 221 83% 53%;
+    --sidebar-background: 205 40% 97%;
+    --sidebar-foreground: 220 60% 15%;
+    --sidebar-primary: 220 70% 25%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 5% 96%;
-    --sidebar-accent-foreground: 240 6% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 221 83% 53%;
+    --sidebar-accent: 205 40% 94%;
+    --sidebar-accent-foreground: 220 60% 15%;
+    --sidebar-border: 205 40% 88%;
+    --sidebar-ring: 220 70% 25%;
 
     /* Font families */
     --font-display: 'Playfair Display', serif;
@@ -63,42 +63,42 @@
   }
 
   .dark {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 98%;
+    --background: 220 50% 8%;
+    --foreground: 205 40% 95%;
 
-    --card: 222 47% 8%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 50% 10%;
+    --card-foreground: 205 40% 95%;
 
-    --popover: 222 47% 8%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 50% 10%;
+    --popover-foreground: 205 40% 95%;
 
-    --primary: 221 83% 60%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 205 70% 60%;
+    --primary-foreground: 220 60% 10%;
 
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 40% 20%;
+    --secondary-foreground: 205 40% 95%;
 
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 220 40% 18%;
+    --muted-foreground: 205 30% 60%;
 
-    --accent: 262 83% 65%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 205 60% 50%;
+    --accent-foreground: 220 60% 10%;
 
     --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 205 40% 95%;
 
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 221 83% 60%;
+    --border: 220 40% 20%;
+    --input: 220 40% 20%;
+    --ring: 205 70% 60%;
 
-    --sidebar-background: 240 6% 10%;
-    --sidebar-foreground: 240 5% 96%;
-    --sidebar-primary: 221 83% 53%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 4% 16%;
-    --sidebar-accent-foreground: 240 5% 96%;
-    --sidebar-border: 240 4% 16%;
-    --sidebar-ring: 221 83% 53%;
+    --sidebar-background: 220 50% 8%;
+    --sidebar-foreground: 205 40% 95%;
+    --sidebar-primary: 205 70% 60%;
+    --sidebar-primary-foreground: 220 60% 10%;
+    --sidebar-accent: 220 40% 15%;
+    --sidebar-accent-foreground: 205 40% 95%;
+    --sidebar-border: 220 40% 18%;
+    --sidebar-ring: 205 70% 60%;
   }
 }
 

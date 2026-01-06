@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogIn, LogOut, User } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import logo from "@/assets/logo.jpg";
 
 const navLinks = [
   { name: "Home", href: "#home" },
@@ -14,6 +17,7 @@ const navLinks = [
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -31,13 +35,17 @@ export function Header() {
     setIsMobileMenuOpen(false);
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
   return (
     <header
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         isScrolled
           ? "bg-background/95 backdrop-blur-md shadow-sm"
-          : "bg-transparent"
+          : "bg-primary/90 backdrop-blur-sm"
       )}
     >
       <div className="container mx-auto px-4">
@@ -49,12 +57,17 @@ export function Header() {
               e.preventDefault();
               scrollToSection("#home");
             }}
-            className="flex items-center gap-2"
+            className="flex items-center gap-3"
           >
+            <img 
+              src={logo} 
+              alt="Shiloh Intercession Mountain Logo" 
+              className="h-10 md:h-14 w-auto rounded-md"
+            />
             <span
               className={cn(
-                "font-display text-xl md:text-2xl font-bold transition-colors",
-                isScrolled ? "text-foreground" : "text-white"
+                "font-display text-lg md:text-xl font-bold transition-colors hidden sm:block",
+                isScrolled ? "text-foreground" : "text-primary-foreground"
               )}
             >
               Shiloh Intercession Mountain
@@ -62,7 +75,7 @@ export function Header() {
           </a>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden lg:flex items-center gap-6">
             {navLinks.map((link) => (
               <a
                 key={link.name}
@@ -72,13 +85,54 @@ export function Header() {
                   scrollToSection(link.href);
                 }}
                 className={cn(
-                  "text-sm font-medium transition-colors hover:text-primary",
-                  isScrolled ? "text-foreground" : "text-white/90"
+                  "text-sm font-medium transition-colors hover:text-accent",
+                  isScrolled ? "text-foreground" : "text-primary-foreground/90"
                 )}
               >
                 {link.name}
               </a>
             ))}
+            
+            {/* Auth Button */}
+            {user ? (
+              <div className="flex items-center gap-3">
+                <Link to="/admin">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className={cn(
+                      "gap-2",
+                      !isScrolled && "border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+                    )}
+                  >
+                    <User className="h-4 w-4" />
+                    Dashboard
+                  </Button>
+                </Link>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={handleSignOut}
+                  className={cn(
+                    "gap-2",
+                    !isScrolled && "text-primary-foreground hover:bg-primary-foreground/10"
+                  )}
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <Link to="/auth">
+                <Button 
+                  variant="secondary" 
+                  size="sm"
+                  className="gap-2"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Login
+                </Button>
+              </Link>
+            )}
           </nav>
 
           {/* Mobile Menu Button */}
@@ -86,8 +140,8 @@ export function Header() {
             variant="ghost"
             size="icon"
             className={cn(
-              "md:hidden",
-              isScrolled ? "text-foreground" : "text-white"
+              "lg:hidden",
+              isScrolled ? "text-foreground" : "text-primary-foreground"
             )}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
@@ -98,7 +152,7 @@ export function Header() {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-background border-t">
+        <div className="lg:hidden bg-background border-t">
           <nav className="container mx-auto px-4 py-4">
             <ul className="flex flex-col gap-2">
               {navLinks.map((link) => (
@@ -115,6 +169,34 @@ export function Header() {
                   </a>
                 </li>
               ))}
+              <li className="pt-2 border-t mt-2">
+                {user ? (
+                  <div className="flex flex-col gap-2">
+                    <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button variant="outline" size="sm" className="w-full gap-2">
+                        <User className="h-4 w-4" />
+                        Dashboard
+                      </Button>
+                    </Link>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={handleSignOut}
+                      className="w-full gap-2"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sign Out
+                    </Button>
+                  </div>
+                ) : (
+                  <Link to="/auth" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="default" size="sm" className="w-full gap-2">
+                      <LogIn className="h-4 w-4" />
+                      Login
+                    </Button>
+                  </Link>
+                )}
+              </li>
             </ul>
           </nav>
         </div>
