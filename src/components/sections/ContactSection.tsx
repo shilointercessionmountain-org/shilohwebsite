@@ -8,6 +8,33 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { z } from "zod";
+
+const contactSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Name is required")
+    .max(100, "Name must be less than 100 characters")
+    .regex(/^[a-zA-Z\s'-]+$/, "Name can only contain letters, spaces, hyphens, and apostrophes"),
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address")
+    .max(255, "Email must be less than 255 characters"),
+  message: z
+    .string()
+    .trim()
+    .min(1, "Message is required")
+    .max(255, "Message must be 255 characters or less"),
+});
+
+type FormErrors = {
+  name?: string;
+  email?: string;
+  message?: string;
+};
 
 export function ContactSection() {
   const queryClient = useQueryClient();
@@ -17,6 +44,7 @@ export function ContactSection() {
     email: "",
     message: "",
   });
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const { data: churchInfo } = useQuery({
     queryKey: ["church-info-contact"],
@@ -34,9 +62,9 @@ export function ContactSection() {
   const submitMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const { error } = await supabase.from("contact_submissions").insert({
-        name: data.name,
-        email: data.email,
-        message: data.message,
+        name: data.name.trim(),
+        email: data.email.trim(),
+        message: data.message.trim(),
       });
 
       if (error) throw error;
@@ -44,6 +72,7 @@ export function ContactSection() {
     onSuccess: () => {
       setIsSubmitted(true);
       setFormData({ name: "", email: "", message: "" });
+      setErrors({});
       toast.success("Message sent successfully! We'll get back to you soon.");
     },
     onError: () => {
@@ -51,11 +80,41 @@ export function ContactSection() {
     },
   });
 
+  const validateField = (field: keyof typeof formData, value: string) => {
+    const result = contactSchema.shape[field].safeParse(value);
+    if (!result.success) {
+      return result.error.errors[0].message;
+    }
+    return undefined;
+  };
+
+  const handleFieldChange = (field: keyof typeof formData, value: string) => {
+    setFormData({ ...formData, [field]: value });
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors({ ...errors, [field]: undefined });
+    }
+  };
+
+  const handleFieldBlur = (field: keyof typeof formData) => {
+    const error = validateField(field, formData[field]);
+    setErrors({ ...errors, [field]: error });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.email || !formData.message) {
-      toast.error("Please fill in all fields");
+    const result = contactSchema.safeParse(formData);
+    if (!result.success) {
+      const fieldErrors: FormErrors = {};
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as keyof FormErrors;
+        if (!fieldErrors[field]) {
+          fieldErrors[field] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      toast.error("Please fix the errors in the form");
       return;
     }
 
@@ -107,11 +166,14 @@ export function ContactSection() {
                       id="name"
                       placeholder="John Doe"
                       value={formData.name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
+                      onChange={(e) => handleFieldChange("name", e.target.value)}
+                      onBlur={() => handleFieldBlur("name")}
+                      className={errors.name ? "border-destructive" : ""}
                       required
                     />
+                    {errors.name && (
+                      <p className="text-sm text-destructive">{errors.name}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -121,25 +183,37 @@ export function ContactSection() {
                       type="email"
                       placeholder="john@example.com"
                       value={formData.email}
-                      onChange={(e) =>
-                        setFormData({ ...formData, email: e.target.value })
-                      }
+                      onChange={(e) => handleFieldChange("email", e.target.value)}
+                      onBlur={() => handleFieldBlur("email")}
+                      className={errors.email ? "border-destructive" : ""}
                       required
                     />
+                    {errors.email && (
+                      <p className="text-sm text-destructive">{errors.email}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="message">Your Message</Label>
+                    <div className="flex justify-between">
+                      <Label htmlFor="message">Your Message</Label>
+                      <span className={`text-xs ${formData.message.length > 255 ? "text-destructive" : "text-muted-foreground"}`}>
+                        {formData.message.length}/255
+                      </span>
+                    </div>
                     <Textarea
                       id="message"
                       placeholder="How can we help you?"
                       rows={5}
                       value={formData.message}
-                      onChange={(e) =>
-                        setFormData({ ...formData, message: e.target.value })
-                      }
+                      onChange={(e) => handleFieldChange("message", e.target.value)}
+                      onBlur={() => handleFieldBlur("message")}
+                      className={errors.message ? "border-destructive" : ""}
+                      maxLength={255}
                       required
                     />
+                    {errors.message && (
+                      <p className="text-sm text-destructive">{errors.message}</p>
+                    )}
                   </div>
 
                   <Button
