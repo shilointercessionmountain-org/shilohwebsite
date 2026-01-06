@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { useNavigate, Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { 
   LayoutDashboard, 
@@ -23,7 +25,7 @@ const navItems = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Events", href: "/admin/events", icon: Calendar },
   { name: "Videos", href: "/admin/videos", icon: Video },
-  { name: "Messages", href: "/admin/messages", icon: MessageSquare },
+  { name: "Messages", href: "/admin/messages", icon: MessageSquare, showBadge: true },
   { name: "Admins", href: "/admin/admins", icon: UserCog },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
@@ -33,6 +35,21 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Fetch unread messages count
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ["unread-messages-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("contact_submissions")
+        .select("*", { count: "exact", head: true })
+        .eq("is_read", false);
+
+      if (error) throw error;
+      return count || 0;
+    },
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -113,14 +130,24 @@ export default function AdminLayout() {
                 to={item.href}
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-2 rounded-lg transition-colors",
+                  "flex items-center gap-3 px-4 py-2 rounded-lg transition-colors relative",
                   location.pathname === item.href
                     ? "bg-primary text-primary-foreground"
                     : "hover:bg-muted"
                 )}
               >
-                <item.icon className="h-5 w-5" />
+                <div className="relative">
+                  <item.icon className="h-5 w-5" />
+                  {item.showBadge && unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-destructive rounded-full animate-pulse" />
+                  )}
+                </div>
                 {item.name}
+                {item.showBadge && unreadCount > 0 && (
+                  <span className="ml-auto bg-destructive text-destructive-foreground text-xs font-medium px-1.5 py-0.5 rounded-full">
+                    {unreadCount}
+                  </span>
+                )}
               </Link>
             ))}
             <hr className="my-4" />
@@ -159,21 +186,30 @@ export default function AdminLayout() {
               </div>
             </div>
 
-            {/* Navigation */}
             <nav className="flex-1 p-4 space-y-2">
               {navItems.map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors",
+                    "flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors relative",
                     location.pathname === item.href
                       ? "bg-primary text-primary-foreground"
                       : "hover:bg-muted text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  <item.icon className="h-5 w-5" />
+                  <div className="relative">
+                    <item.icon className="h-5 w-5" />
+                    {item.showBadge && unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-destructive rounded-full animate-pulse" />
+                    )}
+                  </div>
                   {item.name}
+                  {item.showBadge && unreadCount > 0 && (
+                    <span className="ml-auto bg-destructive text-destructive-foreground text-xs font-medium px-1.5 py-0.5 rounded-full">
+                      {unreadCount}
+                    </span>
+                  )}
                 </Link>
               ))}
             </nav>
