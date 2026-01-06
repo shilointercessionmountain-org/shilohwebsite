@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format, parseISO } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
+import eventsBg from "@/assets/events-bg.jpg";
 
 const eventTypeColors: Record<string, string> = {
   weekly: "bg-primary/10 text-primary",
@@ -46,8 +47,15 @@ export function EventsSection() {
   };
 
   return (
-    <section id="events" className="section-padding bg-background">
-      <div className="container mx-auto">
+    <section id="events" className="relative section-padding overflow-hidden">
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${eventsBg})` }}
+      />
+      {/* Dark overlay for readability */}
+      <div className="absolute inset-0 bg-background/90 dark:bg-background/95" />
+      <div className="container mx-auto relative z-10">
         {/* Section Header */}
         <div className="text-center mb-16">
           <h2 className="font-display text-3xl md:text-5xl font-bold text-foreground mb-4">
