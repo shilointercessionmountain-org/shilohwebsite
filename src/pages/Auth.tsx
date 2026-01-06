@@ -8,12 +8,34 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { ArrowLeft, Church, Eye, EyeOff } from "lucide-react";
+import { z } from "zod";
+
+const authSchema = z.object({
+  email: z.string().trim().email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+const signUpSchema = authSchema.extend({
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
+type AuthErrors = {
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+};
 
 export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<AuthErrors>({});
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
 
@@ -23,16 +45,27 @@ export default function Auth() {
     return null;
   }
 
+  const clearErrors = () => setErrors({});
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    clearErrors();
     
-    if (!email || !password) {
-      toast.error("Please fill in all fields");
+    const result = authSchema.safeParse({ email, password });
+    if (!result.success) {
+      const fieldErrors: AuthErrors = {};
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as keyof AuthErrors;
+        if (!fieldErrors[field]) {
+          fieldErrors[field] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
       return;
     }
 
     setIsLoading(true);
-    const { error } = await signIn(email, password);
+    const { error } = await signIn(email.trim(), password);
     setIsLoading(false);
 
     if (error) {
@@ -49,19 +82,26 @@ export default function Auth() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    clearErrors();
     
-    if (!email || !password) {
-      toast.error("Please fill in all fields");
-      return;
-    }
-
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    const result = signUpSchema.safeParse({ email, password, confirmPassword });
+    if (!result.success) {
+      const fieldErrors: AuthErrors = {};
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as keyof AuthErrors;
+        if (!fieldErrors[field]) {
+          fieldErrors[field] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      if (fieldErrors.confirmPassword) {
+        toast.error(fieldErrors.confirmPassword);
+      }
       return;
     }
 
     setIsLoading(true);
-    const { error } = await signUp(email, password);
+    const { error } = await signUp(email.trim(), password);
     setIsLoading(false);
 
     if (error) {
@@ -72,6 +112,7 @@ export default function Auth() {
       }
     } else {
       toast.success("Account created! Please sign in.");
+      setConfirmPassword("");
     }
   };
 
@@ -161,9 +202,13 @@ export default function Auth() {
                       type="email"
                       placeholder="admin@church.com"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => { setEmail(e.target.value); clearErrors(); }}
+                      className={errors.email ? "border-destructive" : ""}
                       required
                     />
+                    {errors.email && (
+                      <p className="text-sm text-destructive">{errors.email}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Password</Label>
@@ -173,9 +218,9 @@ export default function Auth() {
                         type={showPassword ? "text" : "password"}
                         placeholder="••••••••"
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={(e) => { setPassword(e.target.value); clearErrors(); }}
+                        className={`pr-10 ${errors.password ? "border-destructive" : ""}`}
                         required
-                        className="pr-10"
                       />
                       <Button
                         type="button"
@@ -187,10 +232,39 @@ export default function Auth() {
                         {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
                       </Button>
                     </div>
+                    {errors.password && (
+                      <p className="text-sm text-destructive">{errors.password}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Password must be at least 6 characters
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Password must be at least 6 characters
-                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="signup-confirm-password"
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={confirmPassword}
+                        onChange={(e) => { setConfirmPassword(e.target.value); clearErrors(); }}
+                        className={`pr-10 ${errors.confirmPassword ? "border-destructive" : ""}`}
+                        required
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      >
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                      </Button>
+                    </div>
+                    {errors.confirmPassword && (
+                      <p className="text-sm text-destructive">{errors.confirmPassword}</p>
+                    )}
+                  </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Creating account..." : "Create Account"}
                   </Button>
