@@ -176,7 +176,7 @@ export function ContactSection() {
                     allowFullScreen
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
-                    title="Church Location"
+                    title="Our Location"
                   />
                 </div>
               </CardContent>
@@ -196,7 +196,7 @@ export function ContactSection() {
                     <div>
                       <p className="font-semibold text-foreground">Address</p>
                       <p className="text-muted-foreground text-sm">
-                        {churchInfo?.address || "123 Church Street, Johannesburg, South Africa"}
+                        {churchInfo?.address || "Johannesburg, South Africa"}
                       </p>
                     </div>
                   </li>

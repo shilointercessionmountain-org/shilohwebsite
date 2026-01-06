@@ -28,14 +28,14 @@ export function HeroSection() {
           </h1>
           
           <p className="text-lg md:text-xl lg:text-2xl text-white/90 mb-8 max-w-2xl mx-auto opacity-0 animate-fade-in" style={{ animationDelay: "0.4s" }}>
-            A place of prayer, worship, and spiritual growth. Join us as we seek God's presence together.
+            A Prophetic House of Prayer defined by Intercession, Repentance, Deliverance, Worship and the Word. Join us as we seek the Lord through prayer and Intercession.
           </p>
 
           {/* Service Times */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-10 opacity-0 animate-fade-in" style={{ animationDelay: "0.6s" }}>
             <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
               <Clock className="h-5 w-5" />
-              <span>Sundays at 9:00 AM</span>
+              <span>Established 2015</span>
             </div>
             <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
               <MapPin className="h-5 w-5" />
@@ -49,7 +49,7 @@ export function HeroSection() {
               className="bg-white text-primary hover:bg-white/90 font-semibold px-8"
               onClick={() => scrollToSection("#contact")}
             >
-              Join Us This Sunday
+              Connect With Us
             </Button>
             <Button
               size="lg"

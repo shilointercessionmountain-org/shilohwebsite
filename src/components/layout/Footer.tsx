@@ -41,14 +41,14 @@ export function Footer() {
     <footer className="bg-foreground text-background">
       <div className="container mx-auto px-4 py-12 md:py-16">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Church Info */}
+          {/* Ministry Info */}
           <div className="lg:col-span-2">
             <h3 className="font-display text-2xl font-bold mb-4">
               {churchInfo?.church_name || "Shiloh Intercession Mountain"}
             </h3>
             <p className="text-background/70 mb-6 max-w-md">
-              A house of prayer for all nations. Join us as we seek God's presence 
-              and make a difference in our community through faith, love, and service.
+              A prophetic house of prayer for all intercessors around the world. 
+              Equipping, training, and sending out intercessors to be effective for the kingdom of God.
             </p>
             <div className="flex gap-4">
               {socialLinks.map((social) => (
@@ -93,7 +93,7 @@ export function Footer() {
             <ul className="space-y-3 text-background/70">
               <li className="flex items-start gap-3">
                 <MapPin className="h-5 w-5 mt-0.5 flex-shrink-0" />
-                <span>{churchInfo?.address || "123 Church Street, Johannesburg, South Africa"}</span>
+                <span>{churchInfo?.address || "Johannesburg, South Africa"}</span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="h-5 w-5 flex-shrink-0" />
