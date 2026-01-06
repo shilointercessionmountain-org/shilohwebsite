@@ -6,18 +6,18 @@ import { Card, CardContent } from "@/components/ui/card";
 const values = [
   {
     icon: Heart,
-    title: "Love",
-    description: "We are called to love God and love one another as ourselves.",
+    title: "Intercession",
+    description: "Equipping intercessors to intercede for the body of Christ and for nations.",
   },
   {
     icon: Target,
-    title: "Faith",
-    description: "Standing firm in our faith, trusting God in all circumstances.",
+    title: "Training",
+    description: "Receiving, equipping, and sending out intercessors to be effective for the kingdom of God.",
   },
   {
     icon: Eye,
-    title: "Vision",
-    description: "Empowering believers to fulfill their God-given purpose.",
+    title: "Prayer",
+    description: "A house of prayer and a training place for practical intercession.",
   },
 ];
 
@@ -69,10 +69,10 @@ export function AboutSection() {
         {/* Section Header */}
         <div className="text-center mb-16">
           <h2 className="font-display text-3xl md:text-5xl font-bold text-foreground mb-4">
-            About Our Church
+            About Us
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            {churchInfo?.church_name || "Shiloh Intercession Mountain"} is a vibrant community of believers committed to prayer, worship, and spreading the love of Christ.
+            We are a prophetic house of God for all intercessors around the world. Established in 2015, we are not a church but a house of prayer — a training place for practical intercession.
           </p>
         </div>
 
@@ -87,7 +87,7 @@ export function AboutSection() {
                 Our Mission
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                {churchInfo?.mission_statement || "To create a house of prayer for all nations, where every believer can encounter God's presence, grow in faith, and be equipped to transform their communities through the power of prayer and the gospel of Jesus Christ."}
+                {churchInfo?.mission_statement || "To push the mission of Jesus Christ by equipping intercessors to intercede. To intercede for the body of Christ and for nations."}
               </p>
             </CardContent>
           </Card>
@@ -101,7 +101,7 @@ export function AboutSection() {
                 Our Vision
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                {churchInfo?.vision_statement || "To see lives transformed, families restored, and communities revived through the power of intercessory prayer and the uncompromising preaching of God's Word, raising a generation of prayer warriors across the nations."}
+                {churchInfo?.vision_statement || "The work of our ministry includes receiving, equipping, training, and sending out intercessors to be effective for the kingdom of God."}
               </p>
             </CardContent>
           </Card>
@@ -135,7 +135,7 @@ export function AboutSection() {
         <div className="grid md:grid-cols-2 gap-8">
           <Card className="border-0 shadow-lg bg-primary text-primary-foreground">
             <CardContent className="p-8">
-              <h3 className="font-display text-2xl font-bold mb-6">Service Times</h3>
+              <h3 className="font-display text-2xl font-bold mb-6">Meeting Times</h3>
               <ul className="space-y-4">
                 {serviceTimes && serviceTimes.length > 0 ? (
                   serviceTimes.map((service) => (
@@ -178,8 +178,8 @@ export function AboutSection() {
                 <li className="flex items-start gap-3">
                   <MapPin className="h-5 w-5 mt-0.5 flex-shrink-0 text-primary" />
                   <div>
-                    <p className="font-semibold text-foreground">Address</p>
-                    <p>{churchInfo?.address || "123 Church Street, Johannesburg, South Africa"}</p>
+                      <p className="font-semibold text-foreground">Address</p>
+                    <p>{churchInfo?.address || "Johannesburg, South Africa"}</p>
                   </div>
                 </li>
                 <li className="flex items-start gap-3">
