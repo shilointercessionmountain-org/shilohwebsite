@@ -39,7 +39,7 @@ export function HeroSection() {
             </div>
             <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
               <MapPin className="h-5 w-5" />
-              <span>Johannesburg, South Africa</span>
+              <span>Mpumalanga, South Africa</span>
             </div>
           </div>
 
