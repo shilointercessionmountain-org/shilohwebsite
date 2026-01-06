@@ -53,8 +53,18 @@ export default function Gallery() {
         .order("display_order", { ascending: true });
 
       if (error) throw error;
+      
+      // Sync selectedAlbum with fresh data to keep UI in sync
+      if (selectedAlbum && data) {
+        const updatedAlbum = data.find((a: Album) => a.id === selectedAlbum.id);
+        if (updatedAlbum && JSON.stringify(updatedAlbum) !== JSON.stringify(selectedAlbum)) {
+          setSelectedAlbum(updatedAlbum);
+        }
+      }
+      
       return data as Album[];
     },
+    refetchInterval: 5000, // Background refresh every 5 seconds
   });
 
   const { data: albumImages } = useQuery({
@@ -71,6 +81,7 @@ export default function Gallery() {
       return data as GalleryImage[];
     },
     enabled: !!selectedAlbum,
+    refetchInterval: 5000, // Background refresh every 5 seconds
   });
 
   const createAlbumMutation = useMutation({
