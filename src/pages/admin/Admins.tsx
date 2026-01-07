@@ -385,7 +385,10 @@ export default function Admins() {
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() => handleRejectRequest(request.id, request.email)}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    handleRejectRequest(request.id, request.email);
+                                  }}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                   Reject Request
@@ -462,7 +465,10 @@ export default function Admins() {
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction
-                                onClick={() => handleRemoveAdmin(admin.id, admin.user_id)}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleRemoveAdmin(admin.id, admin.user_id);
+                                }}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
                                 Remove Admin
