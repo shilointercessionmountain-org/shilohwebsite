@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Calendar, Clock, MapPin } from "lucide-react";
+import { Calendar, Clock, MapPin, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { format, parseISO } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import eventsBg from "@/assets/events-bg.jpg";
@@ -19,16 +20,19 @@ export function EventsSection() {
   const { data: events, isLoading } = useQuery({
     queryKey: ["events"],
     queryFn: async () => {
+      const today = new Date().toISOString().split("T")[0];
       const { data, error } = await supabase
         .from("events")
         .select("*")
-        .gte("event_date", new Date().toISOString().split("T")[0])
+        .gte("event_date", today)
         .order("event_date", { ascending: true })
         .limit(4);
 
       if (error) throw error;
       return data;
     },
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const formatTime = (startTime: string, endTime: string | null) => {
@@ -149,11 +153,16 @@ export function EventsSection() {
           )}
         </div>
 
-        {/* View All Link */}
+        {/* View All Button */}
         <div className="text-center mt-10">
-          <p className="text-muted-foreground">
-            Stay tuned for more events. Follow us on social media for updates!
-          </p>
+          <Button
+            size="lg"
+            className="gap-2"
+            onClick={() => window.location.href = "/events"}
+          >
+            <ArrowRight className="h-4 w-4" />
+            See All Events
+          </Button>
         </div>
       </div>
     </section>

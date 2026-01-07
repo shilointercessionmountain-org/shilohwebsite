@@ -7,9 +7,10 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Gallery from "./pages/Gallery";
+import PublicEvents from "./pages/Events";
 import AdminLayout from "./pages/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
-import Events from "./pages/admin/Events";
+import AdminEvents from "./pages/admin/Events";
 import Videos from "./pages/admin/Videos";
 import Messages from "./pages/admin/Messages";
 import Settings from "./pages/admin/Settings";
@@ -31,10 +32,11 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/gallery" element={<Gallery />} />
+            <Route path="/events" element={<PublicEvents />} />
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<Dashboard />} />
               <Route path="profile" element={<AdminProfile />} />
-              <Route path="events" element={<Events />} />
+              <Route path="events" element={<AdminEvents />} />
               <Route path="videos" element={<Videos />} />
               <Route path="messages" element={<Messages />} />
               <Route path="admins" element={<Admins />} />
