@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ArrowLeft, Church, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Church, Eye, EyeOff, Clock, LogOut } from "lucide-react";
 import { z } from "zod";
 
 const authSchema = z.object({
@@ -28,6 +29,8 @@ type AuthErrors = {
   confirmPassword?: string;
 };
 
+type RequestStatus = "none" | "pending" | "approved" | "rejected";
+
 export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,13 +39,103 @@ export default function Auth() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<AuthErrors>({});
-  const { signIn, signUp, user } = useAuth();
+  const [requestStatus, setRequestStatus] = useState<RequestStatus>("none");
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const { signIn, signUp, signOut, user, isAdmin } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect if already logged in
-  if (user) {
+  // Check request status for logged-in non-admin users
+  useEffect(() => {
+    const checkRequestStatus = async () => {
+      if (user && !isAdmin) {
+        setIsCheckingStatus(true);
+        const { data } = await supabase
+          .from("admin_requests")
+          .select("status")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        
+        if (data) {
+          setRequestStatus(data.status as RequestStatus);
+        } else {
+          setRequestStatus("none");
+        }
+        setIsCheckingStatus(false);
+      }
+    };
+    checkRequestStatus();
+  }, [user, isAdmin]);
+
+  // Redirect if already logged in and is admin
+  if (user && isAdmin) {
     navigate("/admin");
     return null;
+  }
+
+  // Show pending status page for logged-in users awaiting approval
+  if (user && !isAdmin && !isCheckingStatus && requestStatus === "pending") {
+    return (
+      <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
+        <div className="w-full max-w-md text-center">
+          <div className="flex justify-center mb-6">
+            <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center">
+              <Clock className="h-10 w-10 text-amber-600" />
+            </div>
+          </div>
+          <h1 className="font-display text-2xl font-bold text-foreground mb-2">
+            Awaiting Approval
+          </h1>
+          <p className="text-muted-foreground mb-6">
+            Your admin access request is pending. An administrator will review your request shortly.
+          </p>
+          <Card className="border-0 shadow-lg mb-6">
+            <CardContent className="pt-6">
+              <p className="text-sm text-muted-foreground">Signed in as</p>
+              <p className="font-medium">{user.email}</p>
+            </CardContent>
+          </Card>
+          <div className="flex gap-4 justify-center">
+            <Button variant="outline" asChild>
+              <Link to="/">Go to Homepage</Link>
+            </Button>
+            <Button variant="destructive" onClick={() => signOut()}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show rejected status page
+  if (user && !isAdmin && !isCheckingStatus && requestStatus === "rejected") {
+    return (
+      <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
+        <div className="w-full max-w-md text-center">
+          <div className="flex justify-center mb-6">
+            <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center">
+              <Church className="h-10 w-10 text-destructive" />
+            </div>
+          </div>
+          <h1 className="font-display text-2xl font-bold text-foreground mb-2">
+            Request Declined
+          </h1>
+          <p className="text-muted-foreground mb-6">
+            Your admin access request was not approved. Please contact the church administrator for more information.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <Button variant="outline" asChild>
+              <Link to="/">Go to Homepage</Link>
+            </Button>
+            <Button variant="destructive" onClick={() => signOut()}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const clearErrors = () => setErrors({});
@@ -101,7 +194,7 @@ export default function Auth() {
     }
 
     setIsLoading(true);
-    const { error } = await signUp(email.trim(), password);
+    const { error, userId } = await signUp(email.trim(), password);
     setIsLoading(false);
 
     if (error) {
@@ -111,8 +204,23 @@ export default function Auth() {
         toast.error(error.message);
       }
     } else {
-      toast.success("Account created! Please sign in.");
+      // Create admin request for the new user
+      if (userId) {
+        const { error: requestError } = await supabase
+          .from("admin_requests")
+          .insert({
+            user_id: userId,
+            email: email.trim().toLowerCase(),
+            status: "pending",
+          });
+
+        if (requestError) {
+          console.error("Failed to create admin request:", requestError);
+        }
+      }
+      toast.success("Account created! Your request is pending admin approval.");
       setConfirmPassword("");
+      setRequestStatus("pending");
     }
   };
 

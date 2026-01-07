@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { usePendingRequests } from "@/hooks/usePendingRequests";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -32,8 +34,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Trash2, UserCog, Loader2 } from "lucide-react";
+import { Plus, Trash2, UserCog, Loader2, Check, X, Clock, UserPlus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AdminUser {
   id: string;
@@ -48,7 +51,10 @@ export default function Admins() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { pendingRequests, pendingCount, refetch: refetchPending } = usePendingRequests();
 
   useEffect(() => {
     fetchAdmins();
@@ -57,7 +63,6 @@ export default function Admins() {
   const fetchAdmins = async () => {
     setIsLoading(true);
     try {
-      // Get all admin roles with profile info
       const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
         .select("id, user_id, created_at")
@@ -65,7 +70,6 @@ export default function Admins() {
 
       if (rolesError) throw rolesError;
 
-      // Get profiles for all admin user_ids
       const userIds = (roles || []).map((r) => r.user_id);
       const { data: profiles } = await supabase
         .from("profiles")
@@ -99,7 +103,6 @@ export default function Admins() {
 
     setIsSubmitting(true);
     try {
-      // Find user by email in profiles table
       const { data: profile } = await supabase
         .from("profiles")
         .select("id")
@@ -112,7 +115,6 @@ export default function Admins() {
         return;
       }
 
-      // Check if user already has admin role
       const { data: existing } = await supabase
         .from("user_roles")
         .select("id")
@@ -126,7 +128,6 @@ export default function Admins() {
         return;
       }
 
-      // Add admin role
       const { error } = await supabase.from("user_roles").insert({
         user_id: profile.id,
         role: "admin",
@@ -148,7 +149,6 @@ export default function Admins() {
   };
 
   const handleRemoveAdmin = async (adminId: string, adminUserId: string) => {
-    // Prevent removing yourself
     if (adminUserId === user?.id) {
       toast.error("You cannot remove your own admin access");
       return;
@@ -170,6 +170,68 @@ export default function Admins() {
     }
   };
 
+  const handleApproveRequest = async (requestId: string, userId: string, email: string) => {
+    setProcessingId(requestId);
+    try {
+      // Add admin role
+      const { error: roleError } = await supabase.from("user_roles").insert({
+        user_id: userId,
+        role: "admin",
+      });
+
+      if (roleError) throw roleError;
+
+      // Update request status
+      const { error: updateError } = await supabase
+        .from("admin_requests")
+        .update({
+          status: "approved",
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: user?.id,
+        })
+        .eq("id", requestId);
+
+      if (updateError) throw updateError;
+
+      toast.success(`${email} has been approved as admin`);
+      refetchPending();
+      fetchAdmins();
+      queryClient.invalidateQueries({ queryKey: ["pending-admin-requests"] });
+    } catch (error: unknown) {
+      const errMessage = error instanceof Error ? error.message : "Failed to approve request";
+      toast.error(errMessage);
+      console.error(error);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleRejectRequest = async (requestId: string, email: string) => {
+    setProcessingId(requestId);
+    try {
+      // Delete the request
+      const { error } = await supabase
+        .from("admin_requests")
+        .update({
+          status: "rejected",
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: user?.id,
+        })
+        .eq("id", requestId);
+
+      if (error) throw error;
+
+      toast.success(`Request from ${email} has been rejected`);
+      refetchPending();
+      queryClient.invalidateQueries({ queryKey: ["pending-admin-requests"] });
+    } catch (error: unknown) {
+      toast.error("Failed to reject request");
+      console.error(error);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -178,7 +240,7 @@ export default function Admins() {
             Admin Management
           </h1>
           <p className="text-muted-foreground">
-            Manage administrator access for the dashboard
+            Manage administrator access and approve new requests
           </p>
         </div>
 
@@ -238,79 +300,185 @@ export default function Admins() {
         </Dialog>
       </div>
 
-      <div className="bg-background rounded-lg border">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : admins.length === 0 ? (
-          <div className="text-center py-12">
-            <UserCog className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-medium text-foreground mb-1">No admins found</h3>
-            <p className="text-sm text-muted-foreground">
-              Add an admin to get started
-            </p>
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Added On</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {admins.map((admin) => (
-                <TableRow key={admin.id}>
-                  <TableCell>
-                    {admin.email}
-                    {admin.user_id === user?.id && (
-                      <span className="ml-2 text-xs text-muted-foreground">(You)</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(admin.created_at).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          disabled={admin.user_id === user?.id}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Remove Admin Access</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to remove admin access for this
-                            user? They will no longer be able to access the admin
-                            dashboard.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleRemoveAdmin(admin.id, admin.user_id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+      <Tabs defaultValue="pending" className="w-full">
+        <TabsList>
+          <TabsTrigger value="pending" className="relative">
+            Pending Requests
+            {pendingCount > 0 && (
+              <span className="ml-2 bg-amber-500 text-white text-xs font-medium px-1.5 py-0.5 rounded-full">
+                {pendingCount}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="admins">Current Admins</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pending" className="mt-4">
+          <div className="bg-background rounded-lg border">
+            {pendingRequests.length === 0 ? (
+              <div className="text-center py-12">
+                <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="font-medium text-foreground mb-1">No pending requests</h3>
+                <p className="text-sm text-muted-foreground">
+                  New sign-up requests will appear here for your approval
+                </p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Requested On</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pendingRequests.map((request) => (
+                    <TableRow key={request.id}>
+                      <TableCell className="font-medium">{request.email}</TableCell>
+                      <TableCell>
+                        {new Date(request.created_at).toLocaleDateString()} at{" "}
+                        {new Date(request.created_at).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              handleApproveRequest(request.id, request.user_id, request.email)
+                            }
+                            disabled={processingId === request.id}
+                            className="bg-green-600 hover:bg-green-700"
                           >
-                            Remove Admin
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </div>
+                            {processingId === request.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Check className="h-4 w-4 mr-1" />
+                                Approve
+                              </>
+                            )}
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                disabled={processingId === request.id}
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Reject
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Reject Request</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to reject the admin request from{" "}
+                                  <strong>{request.email}</strong>? They will not be able to
+                                  access the admin panel.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleRejectRequest(request.id, request.email)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Reject Request
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="admins" className="mt-4">
+          <div className="bg-background rounded-lg border">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : admins.length === 0 ? (
+              <div className="text-center py-12">
+                <UserCog className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="font-medium text-foreground mb-1">No admins found</h3>
+                <p className="text-sm text-muted-foreground">
+                  Add an admin to get started
+                </p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Added On</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {admins.map((admin) => (
+                    <TableRow key={admin.id}>
+                      <TableCell>
+                        {admin.email}
+                        {admin.user_id === user?.id && (
+                          <span className="ml-2 text-xs text-muted-foreground">(You)</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(admin.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              disabled={admin.user_id === user?.id}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remove Admin Access</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to remove admin access for this
+                                user? They will no longer be able to access the admin
+                                dashboard.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleRemoveAdmin(admin.id, admin.user_id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Remove Admin
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
