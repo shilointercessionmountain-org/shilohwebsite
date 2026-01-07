@@ -154,7 +154,7 @@ export default function AdminLayout() {
         {isMobileMenuOpen && (
           <nav className="border-t p-4 space-y-2">
             {/* Profile item with separators */}
-            <div className="border-t border-b py-2 my-2">
+            <div className="border-b py-2 mb-2">
               <Link
                 to={profileItem.href}
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -242,7 +242,7 @@ export default function AdminLayout() {
 
             <nav className="flex-1 p-4 space-y-2">
               {/* Profile item with separators */}
-              <div className="border-t border-b py-2 my-2">
+              <div className="border-b py-2 mb-2">
                 <Link
                   to={profileItem.href}
                   className={cn(
