@@ -23,6 +23,7 @@ import {
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface NavItem {
   name: string;
@@ -60,6 +61,23 @@ export default function AdminLayout() {
   // Fetch pending admin requests count with realtime
   const { pendingCount } = usePendingRequests();
 
+  // Fetch admin profile for avatar
+  const { data: profile } = useQuery({
+    queryKey: ["admin-profile", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("first_name, last_name, avatar_url")
+        .eq("id", user.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
   // Fetch unread messages count
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ["unread-messages-count"],
@@ -74,6 +92,13 @@ export default function AdminLayout() {
     },
     refetchInterval: 30000, // Refetch every 30 seconds
   });
+
+  const getInitials = () => {
+    if (profile?.first_name || profile?.last_name) {
+      return `${profile.first_name?.[0] || ""}${profile.last_name?.[0] || ""}`.toUpperCase();
+    }
+    return user?.email?.[0]?.toUpperCase() || "A";
+  };
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -227,12 +252,15 @@ export default function AdminLayout() {
         {/* Desktop Sidebar */}
         <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-background border-r">
           <div className="flex flex-col h-full">
-            {/* Logo */}
+            {/* Logo & Avatar */}
             <div className="p-6 border-b">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                  <Church className="h-5 w-5 text-primary-foreground" />
-                </div>
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={profile?.avatar_url || undefined} alt="Profile" />
+                  <AvatarFallback className="bg-primary text-primary-foreground">
+                    {getInitials()}
+                  </AvatarFallback>
+                </Avatar>
                 <div>
                   <p className="font-display font-bold text-foreground">Admin Panel</p>
                   <p className="text-xs text-muted-foreground">Shiloh IM</p>
