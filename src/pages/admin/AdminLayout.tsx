@@ -240,9 +240,9 @@ export default function AdminLayout() {
               </div>
             </div>
 
-            <nav className="flex-1 p-4 space-y-2">
-              {/* Profile item with separators */}
-              <div className="border-b py-2 mb-2">
+            <nav className="flex-1 px-4 pt-2 pb-4 space-y-2">
+              {/* Profile item with separator */}
+              <div className="border-b pb-2 mb-2">
                 <Link
                   to={profileItem.href}
                   className={cn(
