@@ -68,7 +68,7 @@ export default function AdminLayout() {
       if (!user?.id) return null;
       const { data, error } = await supabase
         .from("profiles")
-        .select("first_name, last_name, avatar_url")
+        .select("first_name, last_name, avatar_url, title")
         .eq("id", user.id)
         .single();
 
@@ -93,11 +93,34 @@ export default function AdminLayout() {
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
+  const TITLES: Record<string, string> = {
+    mr: "Mr",
+    mrs: "Mrs",
+    ms: "Ms",
+    dr: "Dr",
+    prof: "Professor",
+    rev: "Rev",
+    pastor: "Pastor",
+    bishop: "Bishop",
+    elder: "Elder",
+  };
+
   const getInitials = () => {
     if (profile?.first_name || profile?.last_name) {
       return `${profile.first_name?.[0] || ""}${profile.last_name?.[0] || ""}`.toUpperCase();
     }
     return user?.email?.[0]?.toUpperCase() || "A";
+  };
+
+  const getDisplayName = () => {
+    const titleLabel = profile?.title ? TITLES[profile.title] : "";
+    const firstName = profile?.first_name || "";
+    const lastName = profile?.last_name || "";
+
+    if (titleLabel || firstName || lastName) {
+      return `${titleLabel} ${firstName} ${lastName}`.trim();
+    }
+    return user?.email || "Admin";
   };
 
   useEffect(() => {
@@ -261,9 +284,9 @@ export default function AdminLayout() {
                     {getInitials()}
                   </AvatarFallback>
                 </Avatar>
-                <div>
+                <div className="min-w-0">
                   <p className="font-display font-bold text-foreground">Admin Panel</p>
-                  <p className="text-xs text-muted-foreground">Shiloh IM</p>
+                  <p className="text-xs text-muted-foreground truncate">{getDisplayName()}</p>
                 </div>
               </div>
             </div>
