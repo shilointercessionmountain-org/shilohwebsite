@@ -15,6 +15,7 @@ import Messages from "./pages/admin/Messages";
 import Settings from "./pages/admin/Settings";
 import Admins from "./pages/admin/Admins";
 import AdminGallery from "./pages/admin/Gallery";
+import AdminProfile from "./pages/admin/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<Dashboard />} />
+              <Route path="profile" element={<AdminProfile />} />
               <Route path="events" element={<Events />} />
               <Route path="videos" element={<Videos />} />
               <Route path="messages" element={<Messages />} />

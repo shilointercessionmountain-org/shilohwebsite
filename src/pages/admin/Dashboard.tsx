@@ -1,10 +1,42 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Video, MessageSquare, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
+const TITLES: Record<string, string> = {
+  mr: "Mr",
+  mrs: "Mrs",
+  ms: "Ms",
+  dr: "Dr",
+  prof: "Professor",
+  rev: "Rev",
+  pastor: "Pastor",
+  bishop: "Bishop",
+  elder: "Elder",
+};
+
 export default function AdminDashboard() {
+  const { user } = useAuth();
+
+  // Fetch admin profile for personalized welcome
+  const { data: profile } = useQuery({
+    queryKey: ["admin-profile", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("first_name, last_name, title")
+        .eq("id", user.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
   const { data: eventsCount, isLoading: eventsLoading } = useQuery({
     queryKey: ["admin-events-count"],
     queryFn: async () => {
@@ -42,6 +74,20 @@ export default function AdminDashboard() {
     },
   });
 
+  // Build personalized greeting
+  const getGreeting = () => {
+    const titleLabel = profile?.title ? TITLES[profile.title] : "";
+    const firstName = profile?.first_name || "";
+    const lastName = profile?.last_name || "";
+
+    if (titleLabel && (firstName || lastName)) {
+      return `Welcome, ${titleLabel} ${firstName} ${lastName}`.trim();
+    } else if (firstName || lastName) {
+      return `Welcome, ${firstName} ${lastName}`.trim();
+    }
+    return "Welcome to your church admin dashboard";
+  };
+
   const stats = [
     {
       name: "Total Events",
@@ -73,7 +119,7 @@ export default function AdminDashboard() {
           Dashboard
         </h1>
         <p className="text-muted-foreground">
-          Welcome to your church admin dashboard
+          {getGreeting()}
         </p>
       </div>
 

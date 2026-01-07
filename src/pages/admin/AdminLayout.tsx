@@ -17,7 +17,8 @@ import {
   Church,
   Home,
   UserCog,
-  Image
+  Image,
+  User
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -29,7 +30,16 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
   showMessageBadge?: boolean;
   showAdminBadge?: boolean;
+  separator?: "top" | "bottom" | "both";
 }
+
+// Profile item separate from main nav
+const profileItem: NavItem = {
+  name: "Profile",
+  href: "/admin/profile",
+  icon: User,
+  separator: "both",
+};
 
 const navItems: NavItem[] = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -143,6 +153,23 @@ export default function AdminLayout() {
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <nav className="border-t p-4 space-y-2">
+            {/* Profile item with separators */}
+            <div className="border-t border-b py-2 my-2">
+              <Link
+                to={profileItem.href}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-2 rounded-lg transition-colors",
+                  location.pathname === profileItem.href
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-muted"
+                )}
+              >
+                <profileItem.icon className="h-5 w-5" />
+                {profileItem.name}
+              </Link>
+            </div>
+
             {navItems.map((item) => (
               <Link
                 key={item.name}
@@ -214,6 +241,22 @@ export default function AdminLayout() {
             </div>
 
             <nav className="flex-1 p-4 space-y-2">
+              {/* Profile item with separators */}
+              <div className="border-t border-b py-2 my-2">
+                <Link
+                  to={profileItem.href}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors",
+                    location.pathname === profileItem.href
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <profileItem.icon className="h-5 w-5" />
+                  {profileItem.name}
+                </Link>
+              </div>
+
               {navItems.map((item) => (
                 <Link
                   key={item.name}
