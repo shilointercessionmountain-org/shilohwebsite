@@ -1,12 +1,21 @@
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Clock, MapPin, ArrowLeft } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar, Clock, MapPin, ArrowLeft, Filter, X } from "lucide-react";
+import { format, parseISO, getMonth, getYear } from "date-fns";
 import { Link } from "react-router-dom";
 
 const eventTypeColors: Record<string, string> = {
@@ -17,7 +26,35 @@ const eventTypeColors: Record<string, string> = {
   general: "bg-muted text-muted-foreground",
 };
 
+const eventTypes = [
+  { value: "all", label: "All Types" },
+  { value: "weekly", label: "Weekly" },
+  { value: "special", label: "Special" },
+  { value: "youth", label: "Youth" },
+  { value: "fellowship", label: "Fellowship" },
+  { value: "general", label: "General" },
+];
+
+const months = [
+  { value: "all", label: "All Months" },
+  { value: "0", label: "January" },
+  { value: "1", label: "February" },
+  { value: "2", label: "March" },
+  { value: "3", label: "April" },
+  { value: "4", label: "May" },
+  { value: "5", label: "June" },
+  { value: "6", label: "July" },
+  { value: "7", label: "August" },
+  { value: "8", label: "September" },
+  { value: "9", label: "October" },
+  { value: "10", label: "November" },
+  { value: "11", label: "December" },
+];
+
 export default function Events() {
+  const [selectedType, setSelectedType] = useState("all");
+  const [selectedMonth, setSelectedMonth] = useState("all");
+
   const { data: events, isLoading } = useQuery({
     queryKey: ["all-events"],
     queryFn: async () => {
@@ -33,6 +70,27 @@ export default function Events() {
     },
     staleTime: 0,
   });
+
+  const filteredEvents = useMemo(() => {
+    if (!events) return [];
+    
+    return events.filter((event) => {
+      const eventDate = parseISO(event.event_date);
+      const eventMonth = getMonth(eventDate);
+      
+      const matchesType = selectedType === "all" || event.event_type === selectedType;
+      const matchesMonth = selectedMonth === "all" || eventMonth === parseInt(selectedMonth);
+      
+      return matchesType && matchesMonth;
+    });
+  }, [events, selectedType, selectedMonth]);
+
+  const hasActiveFilters = selectedType !== "all" || selectedMonth !== "all";
+
+  const clearFilters = () => {
+    setSelectedType("all");
+    setSelectedMonth("all");
+  };
 
   const formatTime = (startTime: string, endTime: string | null) => {
     const formatTimeStr = (time: string) => {
@@ -56,7 +114,7 @@ export default function Events() {
         <section className="section-padding bg-background">
           <div className="container mx-auto">
             {/* Header */}
-            <div className="text-center mb-12">
+            <div className="text-center mb-8">
               <Link
                 to="/#events"
                 className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4"
@@ -70,6 +128,75 @@ export default function Events() {
               <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
                 Browse all our upcoming events and join us for worship, fellowship, and spiritual growth.
               </p>
+            </div>
+
+            {/* Filters */}
+            <div className="max-w-6xl mx-auto mb-8">
+              <div className="bg-card border rounded-xl p-4 shadow-sm">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Filter className="h-5 w-5" />
+                    <span className="font-medium">Filters</span>
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-3 flex-1">
+                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                      <SelectTrigger className="w-[160px]">
+                        <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <SelectValue placeholder="Select month" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {months.map((month) => (
+                          <SelectItem key={month.value} value={month.value}>
+                            {month.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={selectedType} onValueChange={setSelectedType}>
+                      <SelectTrigger className="w-[160px]">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {eventTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            <div className="flex items-center gap-2">
+                              {type.value !== "all" && (
+                                <span className={`w-2 h-2 rounded-full ${
+                                  type.value === "weekly" ? "bg-primary" :
+                                  type.value === "special" ? "bg-accent" :
+                                  type.value === "youth" ? "bg-green-500" :
+                                  type.value === "fellowship" ? "bg-orange-500" :
+                                  "bg-muted-foreground"
+                                }`} />
+                              )}
+                              {type.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    {hasActiveFilters && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearFilters}
+                        className="gap-1 text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-4 w-4" />
+                        Clear
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Results count */}
+                  <div className="text-sm text-muted-foreground">
+                    {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""} found
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Events Grid */}
@@ -87,8 +214,8 @@ export default function Events() {
                     </CardContent>
                   </Card>
                 ))
-              ) : events && events.length > 0 ? (
-                events.map((event) => {
+              ) : filteredEvents.length > 0 ? (
+                filteredEvents.map((event) => {
                   const eventDate = parseISO(event.event_date);
                   return (
                     <Card
@@ -150,7 +277,16 @@ export default function Events() {
               ) : (
                 <div className="col-span-full text-center py-12">
                   <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No upcoming events at the moment. Check back soon!</p>
+                  <p className="text-muted-foreground mb-4">
+                    {hasActiveFilters 
+                      ? "No events match your filters. Try adjusting your selection."
+                      : "No upcoming events at the moment. Check back soon!"}
+                  </p>
+                  {hasActiveFilters && (
+                    <Button variant="outline" onClick={clearFilters}>
+                      Clear Filters
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
