@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -11,7 +11,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Camera, User, Mail, Lock, Phone, Save, Loader2, Eye, EyeOff } from "lucide-react";
+import { Camera, User, Mail, Lock, Phone, Save, Loader2, Eye, EyeOff, Trash2 } from "lucide-react";
+import { ImageCropper } from "@/components/ImageCropper";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const TITLES = [
   { value: "mr", label: "Mr" },
@@ -55,6 +66,10 @@ export default function AdminProfile() {
 
   // Avatar upload state
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [selectedImageSrc, setSelectedImageSrc] = useState<string>("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeletingAvatar, setIsDeletingAvatar] = useState(false);
 
   // Fetch profile data
   const { data: profile, isLoading } = useQuery({
@@ -104,8 +119,8 @@ export default function AdminProfile() {
     return null;
   };
 
-  // Handle profile picture upload
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle file selection for cropping
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user?.id) return;
 
@@ -129,36 +144,52 @@ export default function AdminProfile() {
       return;
     }
 
+    // Create object URL for cropper
+    const imageUrl = URL.createObjectURL(file);
+    setSelectedImageSrc(imageUrl);
+    setCropperOpen(true);
+    
+    // Reset file input so the same file can be selected again
+    e.target.value = "";
+  };
+
+  // Handle cropped image upload
+  const handleCroppedUpload = async (croppedBlob: Blob) => {
+    if (!user?.id) return;
+
     setIsUploadingAvatar(true);
 
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${user.id}/avatar.${fileExt}`;
+      const fileName = `${user.id}/avatar.jpg`;
 
       // Delete old avatar if exists
       await supabase.storage.from("avatars").remove([`${user.id}/avatar.jpg`, `${user.id}/avatar.png`, `${user.id}/avatar.jpeg`, `${user.id}/avatar.webp`]);
 
-      // Upload new avatar
+      // Upload cropped avatar
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, croppedBlob, { upsert: true, contentType: "image/jpeg" });
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
+      // Get public URL with cache-busting timestamp
       const { data: urlData } = supabase.storage
         .from("avatars")
         .getPublicUrl(fileName);
 
+      const avatarUrlWithTimestamp = `${urlData.publicUrl}?t=${Date.now()}`;
+
       // Update profile with avatar URL
       const { error: updateError } = await supabase
         .from("profiles")
-        .update({ avatar_url: urlData.publicUrl })
+        .update({ avatar_url: avatarUrlWithTimestamp })
         .eq("id", user.id);
 
       if (updateError) throw updateError;
 
       queryClient.invalidateQueries({ queryKey: ["admin-profile"] });
+      setCropperOpen(false);
+      setSelectedImageSrc("");
       toast({
         title: "Profile picture updated",
         description: "Your profile picture has been updated successfully",
@@ -171,6 +202,46 @@ export default function AdminProfile() {
       });
     } finally {
       setIsUploadingAvatar(false);
+    }
+  };
+
+  // Handle avatar deletion
+  const handleDeleteAvatar = async () => {
+    if (!user?.id) return;
+
+    setIsDeletingAvatar(true);
+
+    try {
+      // Delete avatar files
+      await supabase.storage.from("avatars").remove([
+        `${user.id}/avatar.jpg`,
+        `${user.id}/avatar.png`,
+        `${user.id}/avatar.jpeg`,
+        `${user.id}/avatar.webp`
+      ]);
+
+      // Update profile to remove avatar URL
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: null })
+        .eq("id", user.id);
+
+      if (updateError) throw updateError;
+
+      queryClient.invalidateQueries({ queryKey: ["admin-profile"] });
+      setDeleteDialogOpen(false);
+      toast({
+        title: "Profile picture removed",
+        description: "Your profile picture has been removed",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Delete failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingAvatar(false);
     }
   };
 
@@ -388,13 +459,25 @@ export default function AdminProfile() {
         <CardContent className="space-y-6">
           {/* Avatar */}
           <div className="flex items-center gap-6">
-            <div className="relative">
-              <Avatar className="h-24 w-24">
+            <div className="relative group">
+              <Avatar 
+                className={`h-24 w-24 ${profile?.avatar_url ? "cursor-pointer" : ""}`}
+                onClick={() => profile?.avatar_url && setDeleteDialogOpen(true)}
+              >
                 <AvatarImage src={profile?.avatar_url || undefined} alt="Profile" />
                 <AvatarFallback className="text-2xl bg-primary/10 text-primary">
                   {getInitials()}
                 </AvatarFallback>
               </Avatar>
+              {/* Delete overlay - only shows when avatar exists */}
+              {profile?.avatar_url && (
+                <div 
+                  onClick={() => setDeleteDialogOpen(true)}
+                  className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center"
+                >
+                  <Trash2 className="h-6 w-6 text-white" />
+                </div>
+              )}
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploadingAvatar}
@@ -410,7 +493,7 @@ export default function AdminProfile() {
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                onChange={handleAvatarUpload}
+                onChange={handleFileSelect}
                 className="hidden"
               />
             </div>
@@ -419,6 +502,9 @@ export default function AdminProfile() {
                 {getDisplayTitle()} {profile?.first_name} {profile?.last_name}
               </h3>
               <p className="text-sm text-muted-foreground">{user?.email}</p>
+              {profile?.avatar_url && (
+                <p className="text-xs text-muted-foreground mt-1">Click photo to remove</p>
+              )}
             </div>
           </div>
 
@@ -624,6 +710,45 @@ export default function AdminProfile() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Image Cropper Dialog */}
+      <ImageCropper
+        open={cropperOpen}
+        onClose={() => {
+          setCropperOpen(false);
+          setSelectedImageSrc("");
+        }}
+        imageSrc={selectedImageSrc}
+        onCropComplete={handleCroppedUpload}
+        isUploading={isUploadingAvatar}
+      />
+
+      {/* Delete Avatar Confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Profile Picture?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove your current profile picture. You can upload a new one anytime.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingAvatar}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteAvatar}
+              disabled={isDeletingAvatar}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingAvatar ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
