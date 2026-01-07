@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { ArrowLeft, Church, Eye, EyeOff, Clock, LogOut } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { z } from "zod";
 
 const authSchema = z.object({
@@ -41,6 +42,7 @@ export default function Auth() {
   const [errors, setErrors] = useState<AuthErrors>({});
   const [requestStatus, setRequestStatus] = useState<RequestStatus>("none");
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const { signIn, signUp, signOut, user, isAdmin } = useAuth();
   const navigate = useNavigate();
 
@@ -168,6 +170,14 @@ export default function Auth() {
         toast.error(error.message);
       }
     } else {
+      // Store session persistence preference
+      if (rememberMe) {
+        localStorage.setItem("session_persistent", "true");
+        sessionStorage.removeItem("session_active");
+      } else {
+        localStorage.removeItem("session_persistent");
+        sessionStorage.setItem("session_active", "true");
+      }
       toast.success("Welcome back!");
       navigate("/admin");
     }
@@ -294,6 +304,19 @@ export default function Auth() {
                         {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
                       </Button>
                     </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="remember-me"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked === true)}
+                    />
+                    <Label
+                      htmlFor="remember-me"
+                      className="text-sm font-normal cursor-pointer"
+                    >
+                      Remember me
+                    </Label>
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Signing in..." : "Sign In"}

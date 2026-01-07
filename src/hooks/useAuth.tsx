@@ -66,6 +66,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // THEN check for existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      // Handle "Remember Me" - if session exists but wasn't persistent and browser was closed
+      const isPersistent = localStorage.getItem("session_persistent");
+      const isSessionActive = sessionStorage.getItem("session_active");
+      
+      // If user didn't check "Remember Me" (no persistent flag) and sessionStorage is empty
+      // (meaning browser was closed/reopened), sign them out
+      if (session && !isPersistent && !isSessionActive) {
+        await supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -100,6 +114,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    // Clear session persistence flags
+    localStorage.removeItem("session_persistent");
+    sessionStorage.removeItem("session_active");
     await supabase.auth.signOut();
     setIsAdmin(false);
   };
