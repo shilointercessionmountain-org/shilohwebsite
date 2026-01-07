@@ -154,19 +154,24 @@ export default function Admins() {
       return;
     }
 
+    setProcessingId(adminId);
     try {
-      const { error } = await supabase
-        .from("user_roles")
-        .delete()
-        .eq("id", adminId);
+      // Call edge function to completely delete the user from the system
+      const { data, error } = await supabase.functions.invoke("delete-user", {
+        body: { userId: adminUserId },
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-      toast.success("Admin removed successfully");
+      toast.success("User completely removed from system");
       fetchAdmins();
     } catch (error: unknown) {
-      toast.error("Failed to remove admin");
+      const errMessage = error instanceof Error ? error.message : "Failed to remove user";
+      toast.error(errMessage);
       console.error(error);
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -206,26 +211,23 @@ export default function Admins() {
     }
   };
 
-  const handleRejectRequest = async (requestId: string, email: string) => {
+  const handleRejectRequest = async (requestId: string, userId: string, email: string) => {
     setProcessingId(requestId);
     try {
-      // Delete the request
-      const { error } = await supabase
-        .from("admin_requests")
-        .update({
-          status: "rejected",
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: user?.id,
-        })
-        .eq("id", requestId);
+      // Completely delete the user from the system
+      const { data, error } = await supabase.functions.invoke("delete-user", {
+        body: { userId },
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-      toast.success(`Request from ${email} has been rejected`);
+      toast.success(`Request from ${email} has been rejected and user removed`);
       refetchPending();
       queryClient.invalidateQueries({ queryKey: ["pending-admin-requests"] });
     } catch (error: unknown) {
-      toast.error("Failed to reject request");
+      const errMessage = error instanceof Error ? error.message : "Failed to reject request";
+      toast.error(errMessage);
       console.error(error);
     } finally {
       setProcessingId(null);
@@ -387,7 +389,7 @@ export default function Admins() {
                                 <AlertDialogAction
                                   onClick={(e) => {
                                     e.preventDefault();
-                                    handleRejectRequest(request.id, request.email);
+                                    handleRejectRequest(request.id, request.user_id, request.email);
                                   }}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
@@ -448,18 +450,22 @@ export default function Admins() {
                               variant="ghost"
                               size="icon"
                               className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                              disabled={admin.user_id === user?.id}
+                              disabled={admin.user_id === user?.id || processingId === admin.id}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              {processingId === admin.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Remove Admin Access</AlertDialogTitle>
+                              <AlertDialogTitle>Remove User From System</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to remove admin access for this
-                                user? They will no longer be able to access the admin
-                                dashboard.
+                                Are you sure you want to completely remove this user from the system? 
+                                This will delete their account, profile, and all associated data. 
+                                This action cannot be undone.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -471,7 +477,7 @@ export default function Admins() {
                                 }}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
-                                Remove Admin
+                                Delete User
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
