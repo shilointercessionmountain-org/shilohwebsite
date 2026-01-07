@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate, Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
+import { usePendingRequests } from "@/hooks/usePendingRequests";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { 
@@ -22,13 +23,21 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const navItems = [
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  showMessageBadge?: boolean;
+  showAdminBadge?: boolean;
+}
+
+const navItems: NavItem[] = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Events", href: "/admin/events", icon: Calendar },
   { name: "Videos", href: "/admin/videos", icon: Video },
   { name: "Gallery", href: "/admin/gallery", icon: Image },
-  { name: "Messages", href: "/admin/messages", icon: MessageSquare, showBadge: true },
-  { name: "Admins", href: "/admin/admins", icon: UserCog },
+  { name: "Messages", href: "/admin/messages", icon: MessageSquare, showMessageBadge: true },
+  { name: "Admins", href: "/admin/admins", icon: UserCog, showAdminBadge: true },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
@@ -37,6 +46,9 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Fetch pending admin requests count with realtime
+  const { pendingCount } = usePendingRequests();
 
   // Fetch unread messages count
   const { data: unreadCount = 0 } = useQuery({
@@ -145,14 +157,22 @@ export default function AdminLayout() {
               >
                 <div className="relative">
                   <item.icon className="h-5 w-5" />
-                  {item.showBadge && unreadCount > 0 && (
+                  {item.showMessageBadge && unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-destructive rounded-full animate-pulse" />
+                  )}
+                  {item.showAdminBadge && pendingCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-amber-500 rounded-full animate-pulse" />
                   )}
                 </div>
                 {item.name}
-                {item.showBadge && unreadCount > 0 && (
+                {item.showMessageBadge && unreadCount > 0 && (
                   <span className="ml-auto bg-destructive text-destructive-foreground text-xs font-medium px-1.5 py-0.5 rounded-full">
                     {unreadCount}
+                  </span>
+                )}
+                {item.showAdminBadge && pendingCount > 0 && (
+                  <span className="ml-auto bg-amber-500 text-white text-xs font-medium px-1.5 py-0.5 rounded-full">
+                    {pendingCount}
                   </span>
                 )}
               </Link>
@@ -207,14 +227,22 @@ export default function AdminLayout() {
                 >
                   <div className="relative">
                     <item.icon className="h-5 w-5" />
-                    {item.showBadge && unreadCount > 0 && (
+                    {item.showMessageBadge && unreadCount > 0 && (
                       <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-destructive rounded-full animate-pulse" />
+                    )}
+                    {item.showAdminBadge && pendingCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-amber-500 rounded-full animate-pulse" />
                     )}
                   </div>
                   {item.name}
-                  {item.showBadge && unreadCount > 0 && (
+                  {item.showMessageBadge && unreadCount > 0 && (
                     <span className="ml-auto bg-destructive text-destructive-foreground text-xs font-medium px-1.5 py-0.5 rounded-full">
                       {unreadCount}
+                    </span>
+                  )}
+                  {item.showAdminBadge && pendingCount > 0 && (
+                    <span className="ml-auto bg-amber-500 text-white text-xs font-medium px-1.5 py-0.5 rounded-full">
+                      {pendingCount}
                     </span>
                   )}
                 </Link>
