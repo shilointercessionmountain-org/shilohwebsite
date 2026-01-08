@@ -187,7 +187,7 @@ export default function AdminProfile() {
 
       if (updateError) throw updateError;
 
-      queryClient.invalidateQueries({ queryKey: ["admin-profile"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-profile"] });
       setCropperOpen(false);
       setSelectedImageSrc("");
       toast({
@@ -228,7 +228,7 @@ export default function AdminProfile() {
 
       if (updateError) throw updateError;
 
-      queryClient.invalidateQueries({ queryKey: ["admin-profile"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-profile"] });
       setDeleteDialogOpen(false);
       toast({
         title: "Profile picture removed",
@@ -264,7 +264,7 @@ export default function AdminProfile() {
 
       if (error) throw error;
 
-      queryClient.invalidateQueries({ queryKey: ["admin-profile"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-profile"] });
       toast({
         title: "Profile updated",
         description: "Your profile has been updated successfully",
