@@ -178,6 +178,7 @@ export const createAdminRequest = async (
   email: string
 ): Promise<void> => {
   try {
+    console.log('Creating admin request for:', email, userId);
     const requestRef = doc(db, ADMIN_REQUESTS_COLLECTION, userId);
     await setDoc(requestRef, {
       userId,
@@ -185,6 +186,7 @@ export const createAdminRequest = async (
       status: 'pending' as RequestStatus,
       createdAt: serverTimestamp(),
     });
+    console.log('Admin request created successfully for:', email);
   } catch (error) {
     console.error('Error creating admin request:', error);
     throw error;

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAllEvents, createEvent, updateEvent, deleteEvent, Event } from "@/integrations/firebase/firestore/church";
+import { getAllEvents, createEvent, updateEvent, deleteEvent } from "@/integrations/firebase/firestore/church";
+import { Timestamp } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,24 +45,21 @@ export default function AdminEvents() {
 
   const { data: events, isLoading } = useQuery({
     queryKey: ["admin-events"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("events")
-        .select("*")
-        .order("event_date", { ascending: true });
-
-      if (error) throw error;
-      return data;
-    },
+    queryFn: getAllEvents,
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: EventFormData) => {
-      const { error } = await supabase.from("events").insert({
-        ...data,
-        end_time: data.end_time || null,
+      await createEvent({
+        title: data.title,
+        description: data.description,
+        eventDate: Timestamp.fromDate(new Date(data.event_date)),
+        startTime: data.start_time,
+        endTime: data.end_time || null,
+        location: data.location,
+        eventType: data.event_type,
+        isActive: data.is_active,
       });
-      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-events"] });
@@ -74,14 +72,16 @@ export default function AdminEvents() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: EventFormData }) => {
-      const { error } = await supabase
-        .from("events")
-        .update({
-          ...data,
-          end_time: data.end_time || null,
-        })
-        .eq("id", id);
-      if (error) throw error;
+      await updateEvent(id, {
+        title: data.title,
+        description: data.description,
+        eventDate: Timestamp.fromDate(new Date(data.event_date)),
+        startTime: data.start_time,
+        endTime: data.end_time || null,
+        location: data.location,
+        eventType: data.event_type,
+        isActive: data.is_active,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-events"] });
@@ -94,10 +94,7 @@ export default function AdminEvents() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("events").delete().eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: deleteEvent,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-events"] });
       toast.success("Event deleted successfully");
@@ -116,15 +113,19 @@ export default function AdminEvents() {
 
   const handleEdit = (event: any) => {
     setEditingEvent(event.id);
+    const eventDate = event.eventDate instanceof Date 
+      ? event.eventDate 
+      : event.eventDate?.toDate();
+    
     setFormData({
       title: event.title,
       description: event.description || "",
-      event_date: event.event_date,
-      start_time: event.start_time,
-      end_time: event.end_time || "",
+      event_date: eventDate ? format(eventDate, "yyyy-MM-dd") : "",
+      start_time: event.startTime || "09:00",
+      end_time: event.endTime || "",
       location: event.location || "",
-      event_type: event.event_type || "general",
-      is_active: event.is_active ?? true,
+      event_type: event.eventType || "general",
+      is_active: event.isActive ?? true,
     });
     setIsDialogOpen(true);
   };
@@ -276,34 +277,40 @@ export default function AdminEvents() {
             </div>
           ) : events && events.length > 0 ? (
             <div className="divide-y">
-              {events.map((event) => (
-                <div key={event.id} className="p-4 flex items-center justify-between hover:bg-muted/50">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-foreground">{event.title}</h3>
-                      {!event.is_active && (
-                        <span className="text-xs bg-muted px-2 py-0.5 rounded">Draft</span>
-                      )}
+              {events.map((event) => {
+                const eventDate = event.eventDate instanceof Date 
+                  ? event.eventDate 
+                  : event.eventDate?.toDate();
+                
+                return (
+                  <div key={event.id} className="p-4 flex items-center justify-between hover:bg-muted/50">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-foreground">{event.title}</h3>
+                        {!event.isActive && (
+                          <span className="text-xs bg-muted px-2 py-0.5 rounded">Draft</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {eventDate ? format(eventDate, "MMMM d, yyyy") : "TBD"} • {event.location || "TBD"}
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {format(new Date(event.event_date), "MMMM d, yyyy")} • {event.location || "TBD"}
-                    </p>
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(event)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => deleteMutation.mutate(event.id!)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(event)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => deleteMutation.mutate(event.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="p-12 text-center">
